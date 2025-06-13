@@ -1,0 +1,12 @@
+{
+  "name": "auto-mining-off",
+  "version": "1.0.0",
+  "description": "Automatically turn off mining for users who have mined more than 24 hours",
+  "main": "auto_mining_off.js",
+  "scripts": {
+    "start": "node auto_mining_off.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.10.1"
+  }
+}
