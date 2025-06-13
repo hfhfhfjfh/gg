@@ -9,6 +9,9 @@ jobs:
   auto-off:
     runs-on: ubuntu-latest
     steps:
+      - name: Keep GitHub Actions Active (Ping GitHub API)
+        run: curl -I https://api.github.com
+
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
