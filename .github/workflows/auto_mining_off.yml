@@ -1,0 +1,19 @@
+name: Auto Mining Off
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Runs every hour (UTC)
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  auto-off:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install firebase-admin
+      - run: node auto_mining_off.js
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
