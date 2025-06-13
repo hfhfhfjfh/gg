@@ -2,7 +2,7 @@ name: Auto Mining Off
 
 on:
   schedule:
-    - cron: '*/2 * * * *' # Runs every hour (UTC)
+    - cron: '*/15 * * * *' # Runs every hour (UTC)
   workflow_dispatch: # Allows manual trigger
 
 jobs:
