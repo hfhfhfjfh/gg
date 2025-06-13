@@ -2,21 +2,37 @@ name: Auto Mining Off
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Runs every hour (UTC)
+    - cron: '*/15 * * * *' # Runs every 15 minutes (UTC)
   workflow_dispatch: # Allows manual trigger
 
 jobs:
   auto-off:
     runs-on: ubuntu-latest
+
     steps:
+      # Prevent GitHub from putting the scheduler to sleep
       - name: Keep GitHub Actions Active (Ping GitHub API)
         run: curl -I https://api.github.com
 
       - uses: actions/checkout@v4
+
+      # Cache node_modules to speed up builds
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install firebase-admin
-      - run: node auto_mining_off.js
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run auto mining off script
+        run: node auto_mining_off.js
         env:
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
