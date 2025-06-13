@@ -4,7 +4,7 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://starx-network-default-rtdb.firebaseio.com" // <-- Replace with your project id
+  databaseURL: "https://starx-network-default-rtdb.firebaseio.com" // <-- Replace with your Firebase project URL
 });
 
 const db = admin.database();
@@ -28,7 +28,7 @@ async function main() {
       updates.push(
         userSnap.ref.child('mining/isMining').set(false)
       );
-      // Optionally: update balance here
+      // Optionally: update balance here if your logic requires it
       console.log(`Auto-off mining for user: ${userSnap.key}`);
     }
   });
