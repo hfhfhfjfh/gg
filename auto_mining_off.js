@@ -35,12 +35,13 @@ async function main() {
     if (
       mining &&
       mining.isMining &&
-      mining.startTime &&
-      (now - mining.startTime > MINING_DURATION_MS)
+      mining.startTime
     ) {
-      let lastUpdate = mining.lastUpdate || mining.startTime;
+      const lastUpdate = mining.lastUpdate || mining.startTime;
       const miningEndTime = mining.startTime + MINING_DURATION_MS;
-      const elapsedMinutes = Math.floor((miningEndTime - lastUpdate) / (60 * 1000));
+      // Only credit up to the mining end time
+      const creditUntil = Math.min(now, miningEndTime);
+      const elapsedMinutes = Math.floor((creditUntil - lastUpdate) / (60 * 1000));
       if (elapsedMinutes > 0) {
         let speedBoost = 0.0;
         if (userData.referralCode) {
@@ -51,27 +52,25 @@ async function main() {
         const prevBalance = Number(userData.balance) || 0;
         const newBalance = prevBalance + coinsToAdd;
 
+        // If mining period is over, turn off mining
+        const isMiningDone = creditUntil >= miningEndTime;
+
         updates.push(
           usersRef.child(uid).update({
             balance: newBalance,
-            'mining/isMining': false,
-            'mining/lastUpdate': miningEndTime,
+            'mining/isMining': isMiningDone ? false : true,
+            'mining/lastUpdate': creditUntil,
           })
         );
         console.log(
-          `User ${uid}: Credited ${coinsToAdd.toFixed(5)} coins (boost: ${speedBoost}), turned off mining.`
+          `User ${uid}: Credited ${coinsToAdd.toFixed(5)} coins (boost: ${speedBoost}), mining ${isMiningDone ? 'ended' : 'continues'}.`
         );
-      } else {
-        updates.push(
-          usersRef.child(uid).child('mining/isMining').set(false)
-        );
-        console.log(`User ${uid}: Mining turned off (no coins to credit).`);
       }
     }
   }
 
   await Promise.all(updates);
-  console.log('Mining sessions auto-off and credit completed');
+  console.log('Continuous mining crediting completed');
   process.exit(0);
 }
 
