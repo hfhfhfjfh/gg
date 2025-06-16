@@ -14,6 +14,14 @@ const MINING_DURATION_MS = 24 * 60 * 60 * 1000;
 const BASE_COINS_PER_HOUR = 2.0;
 const BOOST_PER_REFERRAL = 0.25;
 
+// Helper to get Firebase server time (ms since epoch)
+async function getFirebaseServerTime(db) {
+  const ref = db.ref('serverTimeForScript');
+  await ref.set(admin.database.ServerValue.TIMESTAMP);
+  const snap = await ref.once('value');
+  return snap.val();
+}
+
 async function getActiveReferralCount(referralCode) {
   if (!referralCode) return 0;
   const usersSnap = await usersRef.orderByChild('referredBy').equalTo(referralCode).once('value');
@@ -26,8 +34,10 @@ async function getActiveReferralCount(referralCode) {
 }
 
 async function main() {
+  // Use Firebase server time instead of Date.now()
+  const now = await getFirebaseServerTime(db);
+
   const snapshot = await usersRef.once('value');
-  const now = Date.now();
   const updates = [];
 
   for (const [uid, userData] of Object.entries(snapshot.val() || {})) {
