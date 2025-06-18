@@ -34,7 +34,6 @@ async function getActiveReferralCount(referralCode) {
 }
 
 async function main() {
-  // Use Firebase server time instead of Date.now()
   const now = await getFirebaseServerTime(db);
 
   const snapshot = await usersRef.once('value');
@@ -49,9 +48,11 @@ async function main() {
     ) {
       const lastUpdate = mining.lastUpdate || mining.startTime;
       const miningEndTime = mining.startTime + MINING_DURATION_MS;
-      // Only credit up to the mining end time
       const creditUntil = Math.min(now, miningEndTime);
-      const elapsedMinutes = Math.floor((creditUntil - lastUpdate) / (60 * 1000));
+
+      // ✅ FIX: Use rounded minutes instead of floor
+      const elapsedMinutes = Math.round((creditUntil - lastUpdate) / (60 * 1000));
+
       if (elapsedMinutes > 0) {
         let speedBoost = 0.0;
         if (userData.referralCode) {
@@ -62,7 +63,6 @@ async function main() {
         const prevBalance = Number(userData.balance) || 0;
         const newBalance = prevBalance + coinsToAdd;
 
-        // If mining period is over, turn off mining
         const isMiningDone = creditUntil >= miningEndTime;
 
         updates.push(
