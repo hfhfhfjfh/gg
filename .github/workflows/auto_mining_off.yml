@@ -1,10 +1,8 @@
 name: Auto Mining Off
 
 on:
-  schedule:
-    - cron: '*/15 * * * *'
-  workflow_dispatch:
-  repository_dispatch:
+  workflow_dispatch:        # Manual trigger via GitHub UI
+  repository_dispatch:      # External trigger via webhook/API
     types: [external-triggered]
 
 jobs:
@@ -12,13 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Prevent GitHub from putting the scheduler to sleep
       - name: Keep GitHub Actions Active (Ping GitHub API)
         run: curl -I https://api.github.com
 
       - uses: actions/checkout@v4
 
-      # Cache node_modules to speed up builds
       - name: Cache node_modules
         uses: actions/cache@v3
         with:
