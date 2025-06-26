@@ -50,8 +50,16 @@ async function main() {
       const miningEndTime = mining.startTime + MINING_DURATION_MS;
       const creditUntil = Math.min(now, miningEndTime);
 
-      // ✅ FIX: Use rounded minutes instead of floor
-      const elapsedMinutes = Math.round((creditUntil - lastUpdate) / (60 * 1000));
+      let elapsedMinutes;
+      const isMiningDone = creditUntil >= miningEndTime;
+
+      if (isMiningDone) {
+        // Always credit all remaining uncredited minutes at mining end
+        elapsedMinutes = Math.floor((miningEndTime - lastUpdate) / (60 * 1000));
+      } else {
+        // Credit all full elapsed minutes for this interval
+        elapsedMinutes = Math.round((creditUntil - lastUpdate) / (60 * 1000));
+      }
 
       if (elapsedMinutes > 0) {
         let speedBoost = 0.0;
@@ -63,8 +71,6 @@ async function main() {
         const prevBalance = Number(userData.balance) || 0;
         const newBalance = prevBalance + coinsToAdd;
 
-        const isMiningDone = creditUntil >= miningEndTime;
-
         updates.push(
           usersRef.child(uid).update({
             balance: newBalance,
@@ -73,7 +79,7 @@ async function main() {
           })
         );
         console.log(
-          `User ${uid}: Credited ${coinsToAdd.toFixed(5)} coins (boost: ${speedBoost}), mining ${isMiningDone ? 'ended' : 'continues'}.`
+          `User ${uid}: Credited ${coinsToAdd.toFixed(5)} coins (boost: ${speedBoost}), minutes: ${elapsedMinutes}, mining ${isMiningDone ? 'ended' : 'continues'}.`
         );
       }
     }
