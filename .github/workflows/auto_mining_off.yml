@@ -1,19 +1,22 @@
 name: Auto Mining Off
 
 on:
-  workflow_dispatch:        # Manual trigger via GitHub UI
-  repository_dispatch:      # External trigger via webhook/API
+  workflow_dispatch:        # Manual trigger
+  repository_dispatch:      # API/webhook trigger
     types: [external-triggered]
 
 jobs:
   auto-off:
-    runs-on: ubuntu-latest
+    runs-on: [koyeb-runner, ubuntu-latest]  # Try Koyeb first, fallback to GitHub-hosted
 
     steps:
-      - name: Keep GitHub Actions Active (Ping GitHub API)
-        run: curl -I https://api.github.com
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Cache node_modules
         uses: actions/cache@v3
@@ -22,10 +25,6 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
 
       - name: Install dependencies
         run: npm ci
