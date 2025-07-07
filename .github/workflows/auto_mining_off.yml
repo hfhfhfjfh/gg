@@ -1,22 +1,19 @@
 name: Auto Mining Off
 
 on:
-  workflow_dispatch:        # Manual trigger
-  repository_dispatch:      # API/webhook trigger
+  workflow_dispatch:        # Manual trigger via GitHub UI
+  repository_dispatch:      # External trigger via webhook/API
     types: [external-triggered]
 
 jobs:
   auto-off:
-    runs-on: koyeb-runner  # Try Koyeb first, fallback to GitHub-hosted
+    runs-on: ubuntu-latest koyeb-runner
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Keep GitHub Actions Active (Ping GitHub API)
+        run: curl -I https://api.github.com
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - uses: actions/checkout@v4
 
       - name: Cache node_modules
         uses: actions/cache@v3
@@ -26,6 +23,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Install dependencies
         run: npm ci
 
@@ -33,3 +34,4 @@ jobs:
         run: node auto_mining_off.js
         env:
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          
