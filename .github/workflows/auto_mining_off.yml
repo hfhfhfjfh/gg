@@ -7,7 +7,7 @@ on:
 
 jobs:
   auto-off:
-    runs-on: [koyeb-runner, ubuntu-latest]  # Try Koyeb first, fallback to GitHub-hosted
+    runs-on: koyeb-runner  # Try Koyeb first, fallback to GitHub-hosted
 
     steps:
       - name: Checkout code
