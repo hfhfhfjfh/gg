@@ -1,9 +1,9 @@
 name: Auto Mining Off
 
 on:
-  schedule:                 # Auto-run every 15 minutes
-    - cron: '*/15 * * * *'
   workflow_dispatch:        # Manual trigger via GitHub UI
+  repository_dispatch:      # External trigger via webhook/API
+    types: [external-triggered]
 
 jobs:
   auto-off:
@@ -34,3 +34,4 @@ jobs:
         run: node auto_mining_off.js
         env:
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          
