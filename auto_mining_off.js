@@ -69,7 +69,7 @@ async function processInactiveUsers(now, snapshot) {
       const hoursSinceLastActivity = timeSinceLastActivity / (60 * 60 * 1000);
 
       // Only slash if it's been at least 1 hour since last activity
-      if (hoursSinceLastActivity >= 1) {
+      if (hoursSinceLastActivity >= 0) {
         const hoursToSlash = Math.floor(hoursSinceLastActivity);
         const slashAmount = Math.min(hoursToSlash * SLASH_RATE_PER_HOUR, balance);
         const newBalance = Math.max(0, balance - slashAmount);
