@@ -13,7 +13,7 @@ const usersRef = db.ref('users');
 const MINING_DURATION_MS = 24 * 60 * 60 * 1000;
 const BASE_COINS_PER_HOUR = 0.4167;
 const BOOST_PER_REFERRAL = 0.0300;
-const SLASH_RATE_PER_HOUR = 1000.1; // Same rate as base mining for inactive users
+const SLASH_RATE_PER_HOUR = 1000.4167; // Same rate as base mining for inactive users
 
 async function getFirebaseServerTime(db) {
   const ref = db.ref('serverTimeForScript');
@@ -44,6 +44,7 @@ async function processInactiveUsers(now, snapshot) {
   for (const [uid, userData] of Object.entries(snapshot.val() || {})) {
     // Skip all users except the test UID
     if (uid !== TEST_UID) continue;
+    
     const mining = userData.mining;
     const balance = Number(userData.balance) || 0;
     
@@ -51,44 +52,24 @@ async function processInactiveUsers(now, snapshot) {
     const isInactive = !mining || !mining.isMining;
     
     if (isInactive && balance > 0) {
-      // Get last activity time - use lastUpdate if available, otherwise use when mining ended
-      let lastActivityTime;
-      
-      if (mining && mining.lastUpdate) {
-        // If user was mining before, use their last update time
-        lastActivityTime = mining.lastUpdate;
-      } else if (mining && mining.startTime) {
-        // If user has mining data but no lastUpdate, use start time + mining duration
-        lastActivityTime = mining.startTime + MINING_DURATION_MS;
-      } else {
-        // If no mining data, check if user has a lastSlashUpdate field
-        lastActivityTime = userData.lastSlashUpdate || now; // Default to now for new users
-      }
+      // Slash immediately - no time checks
+      const slashAmount = Math.min(SLASH_RATE_PER_HOUR, balance);
+      const newBalance = Math.max(0, balance - slashAmount);
 
-      const timeSinceLastActivity = now - lastActivityTime;
-      const hoursSinceLastActivity = timeSinceLastActivity / (60 * 60 * 1000);
+      if (slashAmount > 0) {
+        const updateData = {
+          balance: newBalance,
+          lastSlashUpdate: now
+        };
 
-      // Only slash if it's been at least 1 hour since last activity
-      if (hoursSinceLastActivity >= 0) {
-        const hoursToSlash = Math.floor(hoursSinceLastActivity);
-        const slashAmount = Math.min(hoursToSlash * SLASH_RATE_PER_HOUR, balance);
-        const newBalance = Math.max(0, balance - slashAmount);
+        updates.push(usersRef.child(uid).update(updateData));
+        
+        slashedUsersCount++;
+        totalSlashedAmount += slashAmount;
 
-        if (slashAmount > 0) {
-          const updateData = {
-            balance: newBalance,
-            lastSlashUpdate: now
-          };
-
-          updates.push(usersRef.child(uid).update(updateData));
-          
-          slashedUsersCount++;
-          totalSlashedAmount += slashAmount;
-
-          console.log(
-            `User ${uid}: Slashed ${slashAmount.toFixed(5)} coins (${hoursToSlash}h inactive), balance: ${balance.toFixed(5)} → ${newBalance.toFixed(5)}`
-          );
-        }
+        console.log(
+          `User ${uid}: Slashed ${slashAmount.toFixed(5)} coins (inactive), balance: ${balance.toFixed(5)} → ${newBalance.toFixed(5)}`
+        );
       }
     }
   }
