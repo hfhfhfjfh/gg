@@ -13,8 +13,7 @@ const usersRef = db.ref('users');
 const MINING_DURATION_MS = 24 * 60 * 60 * 1000;
 const BASE_COINS_PER_HOUR = 0.4167;
 const BOOST_PER_REFERRAL = 0.0300;
-const SLASH_RATE_PER_HOUR = 1.25; // Updated slash rate
-const SCRIPT_INTERVAL_MINUTES = 15; // How often this script runs (in minutes)
+const SLASH_AMOUNT = 1.25; // Fixed slash amount per script run (every 3 hours)
 
 async function getFirebaseServerTime(db) {
   const ref = db.ref('serverTimeForScript');
@@ -47,9 +46,8 @@ async function processInactiveUsers(now, snapshot) {
     const isInactive = !mining || !mining.isMining;
     
     if (isInactive && balance > 0) {
-      // Calculate proportional slash based on script interval
-      const slashRatePerInterval = (SLASH_RATE_PER_HOUR / 60) * SCRIPT_INTERVAL_MINUTES;
-      const slashAmount = Math.min(slashRatePerInterval, balance);
+      // Slash fixed amount of 1.25 coins (or remaining balance if less)
+      const slashAmount = Math.min(SLASH_AMOUNT, balance);
       const newBalance = Math.max(0, balance - slashAmount);
 
       if (slashAmount > 0) {
@@ -64,7 +62,7 @@ async function processInactiveUsers(now, snapshot) {
         totalSlashedAmount += slashAmount;
 
         console.log(
-          `User ${uid}: Slashed ${slashAmount.toFixed(5)} coins (${SCRIPT_INTERVAL_MINUTES}min interval), balance: ${balance.toFixed(5)} → ${newBalance.toFixed(5)}`
+          `User ${uid}: Slashed ${slashAmount.toFixed(5)} coins, balance: ${balance.toFixed(5)} → ${newBalance.toFixed(5)}`
         );
       }
     }
