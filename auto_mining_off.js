@@ -13,7 +13,7 @@ const usersRef = db.ref('users');
 const MINING_DURATION_MS = 24 * 60 * 60 * 1000;
 const BASE_COINS_PER_HOUR = 0.4167;
 const BOOST_PER_REFERRAL = 0.0300;
-const SLASH_RATE_PER_HOUR = 0.4167; // Same rate as base mining for inactive users
+const SLASH_RATE_PER_HOUR = 1.25; // Updated slash rate
 const SCRIPT_INTERVAL_MINUTES = 15; // How often this script runs (in minutes)
 
 async function getFirebaseServerTime(db) {
@@ -38,14 +38,8 @@ async function processInactiveUsers(now, snapshot) {
   const updates = [];
   let slashedUsersCount = 0;
   let totalSlashedAmount = 0;
-
-  // TEST MODE: Only process specific UID for testing
-  const TEST_UID = 'agTboyUvq3cE4aWu8CT2Po39vh42';
   
   for (const [uid, userData] of Object.entries(snapshot.val() || {})) {
-    // Skip all users except the test UID
-    if (uid !== TEST_UID) continue;
-    
     const mining = userData.mining;
     const balance = Number(userData.balance) || 0;
     
@@ -78,8 +72,8 @@ async function processInactiveUsers(now, snapshot) {
 
   await Promise.all(updates);
   
-  console.log('Inactive user balance slashing completed (TEST MODE)');
-  console.log(`⚡ Slashed ${slashedUsersCount} inactive users (UID: ${TEST_UID}), total amount: ${totalSlashedAmount.toFixed(5)} coins`);
+  console.log('Inactive user balance slashing completed');
+  console.log(`⚡ Slashed ${slashedUsersCount} inactive users, total amount: ${totalSlashedAmount.toFixed(5)} coins`);
   
   return { slashedUsersCount, totalSlashedAmount };
 }
@@ -156,10 +150,10 @@ async function main() {
   console.log('=== Processing Mining Users ===');
   const miningResults = await processMiningUsers(now, snapshot);
   
-  console.log('\n=== Processing Inactive Users (TEST MODE) ===');
+  console.log('\n=== Processing Inactive Users ===');
   const slashingResults = await processInactiveUsers(now, snapshot);
   
-  console.log('\n=== Summary (TEST MODE) ===');
+  console.log('\n=== Summary ===');
   console.log(`Active miners: ${miningResults.miningActiveCount}`);
   console.log(`Mining sessions ended: ${miningResults.miningEndedCount}`);
   console.log(`Total coins credited: ${miningResults.totalCredited.toFixed(5)}`);
