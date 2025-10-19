@@ -11,7 +11,7 @@ const db = admin.database();
 const usersRef = db.ref('users');
 
 const MINING_DURATION_MS = 24 * 60 * 60 * 1000;
-const BASE_COINS_PER_HOUR = 0.4167;
+const BASE_COINS_PER_HOUR = 0.3125;
 const BOOST_PER_REFERRAL = 0.0300;
 const SLASH_AMOUNT = 1.25; // Fixed slash amount per script run (every 3 hours)
 
@@ -42,11 +42,9 @@ async function processInactiveUsers(now, snapshot) {
     const mining = userData.mining;
     const balance = Number(userData.balance) || 0;
     
-    // Check if user is inactive (not mining or mining session ended)
     const isInactive = !mining || !mining.isMining;
     
     if (isInactive && balance > 0) {
-      // Slash fixed amount of 1.25 coins (or remaining balance if less)
       const slashAmount = Math.min(SLASH_AMOUNT, balance);
       const newBalance = Math.max(0, balance - slashAmount);
 
@@ -104,7 +102,11 @@ async function processMiningUsers(now, snapshot) {
           speedBoost = await getActiveReferralCount(userData.referralCode) * BOOST_PER_REFERRAL;
         }
 
-        const coinsPerMinute = (BASE_COINS_PER_HOUR + speedBoost) / 60.0;
+        // ✅ Include user’s custom boostRate if available
+        const boostRate = Number(userData.boostRate) || 0.0;
+        const totalBoost = speedBoost + boostRate;
+
+        const coinsPerMinute = (BASE_COINS_PER_HOUR + totalBoost) / 60.0;
         const coinsToAdd = elapsedMinutes * coinsPerMinute;
         const prevBalance = Number(userData.balance) || 0;
         const newBalance = prevBalance + coinsToAdd;
@@ -125,7 +127,7 @@ async function processMiningUsers(now, snapshot) {
         totalCredited += coinsToAdd;
 
         console.log(
-          `User ${uid}: Credited ${coinsToAdd.toFixed(5)} coins (boost: ${speedBoost}), minutes: ${elapsedMinutes}, mining ${isMiningDone ? 'ended' : 'continues'}.`
+          `User ${uid}: Credited ${coinsToAdd.toFixed(5)} coins (boost: ${totalBoost.toFixed(4)} [ref:${speedBoost.toFixed(4)}, rate:${boostRate.toFixed(4)}]), minutes: ${elapsedMinutes}, mining ${isMiningDone ? 'ended' : 'continues'}.`
         );
       }
     }
