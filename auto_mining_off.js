@@ -13,7 +13,6 @@ const usersRef = db.ref('users');
 const MINING_DURATION_MS = 24 * 60 * 60 * 1000;
 const BASE_COINS_PER_HOUR = 0.3125;
 const BOOST_PER_REFERRAL = 0.0300;
-const SLASH_AMOUNT = 1.25; // Fixed slash amount per script run (every 3 hours)
 
 async function getFirebaseServerTime(db) {
   const ref = db.ref('serverTimeForScript');
@@ -31,47 +30,6 @@ async function getActiveReferralCount(referralCode) {
     if (mining && mining.isMining) count++;
   });
   return count;
-}
-
-async function processInactiveUsers(now, snapshot) {
-  const updates = [];
-  let slashedUsersCount = 0;
-  let totalSlashedAmount = 0;
-  
-  for (const [uid, userData] of Object.entries(snapshot.val() || {})) {
-    const mining = userData.mining;
-    const balance = Number(userData.balance) || 0;
-    
-    const isInactive = !mining || !mining.isMining;
-    
-    if (isInactive && balance > 0) {
-      const slashAmount = Math.min(SLASH_AMOUNT, balance);
-      const newBalance = Math.max(0, balance - slashAmount);
-
-      if (slashAmount > 0) {
-        const updateData = {
-          balance: newBalance,
-          lastSlashUpdate: now
-        };
-
-        updates.push(usersRef.child(uid).update(updateData));
-        
-        slashedUsersCount++;
-        totalSlashedAmount += slashAmount;
-
-        console.log(
-          `User ${uid}: Slashed ${slashAmount.toFixed(5)} coins, balance: ${balance.toFixed(5)} → ${newBalance.toFixed(5)}`
-        );
-      }
-    }
-  }
-
-  await Promise.all(updates);
-  
-  console.log('Inactive user balance slashing completed');
-  console.log(`⚡ Slashed ${slashedUsersCount} inactive users, total amount: ${totalSlashedAmount.toFixed(5)} coins`);
-  
-  return { slashedUsersCount, totalSlashedAmount };
 }
 
 async function processMiningUsers(now, snapshot) {
@@ -150,16 +108,10 @@ async function main() {
   console.log('=== Processing Mining Users ===');
   const miningResults = await processMiningUsers(now, snapshot);
   
-  console.log('\n=== Processing Inactive Users ===');
-  const slashingResults = await processInactiveUsers(now, snapshot);
-  
   console.log('\n=== Summary ===');
   console.log(`Active miners: ${miningResults.miningActiveCount}`);
   console.log(`Mining sessions ended: ${miningResults.miningEndedCount}`);
   console.log(`Total coins credited: ${miningResults.totalCredited.toFixed(5)}`);
-  console.log(`Inactive users slashed: ${slashingResults.slashedUsersCount}`);
-  console.log(`Total coins slashed: ${slashingResults.totalSlashedAmount.toFixed(5)}`);
-  console.log(`Net coin change: ${(miningResults.totalCredited - slashingResults.totalSlashedAmount).toFixed(5)}`);
   
   process.exit(0);
 }
