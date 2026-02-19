@@ -11,8 +11,8 @@ const db = admin.database();
 const usersRef = db.ref('users');
 
 const MINING_DURATION_MS = 24 * 60 * 60 * 1000;
-const BASE_COINS_PER_HOUR = 0.3125;
-const BOOST_PER_REFERRAL = 0.3300;
+const BASE_COINS_PER_HOUR = 0.1563;
+const BOOST_PER_REFERRAL = 0.1850;
 
 async function getFirebaseServerTime(db) {
   const ref = db.ref('serverTimeForScript');
