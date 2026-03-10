@@ -2,8 +2,8 @@ name: Auto Mining Off
 
 on:
   workflow_dispatch:        # Manual trigger via GitHub UI
-  repository_dispatch:      # External trigger via webhook/API
-    types: [external-triggered]
+  schedule:
+    - cron: '0 */3 * * *'   # Yeh command isko har 3 ghante baad run karegi
 
 jobs:
   auto-off:
